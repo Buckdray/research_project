@@ -466,7 +466,7 @@ responsetime-rate
 responsetime-rate
 0
 100
-45.0
+100.0
 1
 1
 NIL
@@ -528,8 +528,7 @@ HORIZONTAL
 	this will also help the breed
 --- this is still not working accordingly 
 
-2. Having troubles reflecting the changes on different breeds. One breed can't change the breed of another 
-
+2. Having troubles reflecting effects from different
 @#$#@#$#@
 default
 true
