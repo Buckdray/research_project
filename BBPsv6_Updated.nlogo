@@ -1,6 +1,6 @@
 globals [
   %vulnerable
-
+  vulnerability-data
   ;;Ranges to be used with companies
   payout-range-list
   breach-history-list
@@ -14,6 +14,7 @@ globals [
 
   ;;Ranges to be used with researchers
   ability-to-findBugs-list
+  ;;Ability based on hackthebox ranks Noob >= 0%,Script Kiddie > 5%, Hacker > 20%, Pro Hacker > 45%,Elite Hacker > 70%,Guru > 90% and Omniscient = 100%
   knowledge-level-list
   speed-to-analyze-list
   platform-knowledge-list
@@ -136,7 +137,7 @@ to implement-randomizedValues-on-breeds
   set awareness-list n-values 20 [random 100]
   set time-on-bbp-list n-values 20 [random 100]
   set vulnerability-history-list n-values 20 [random 100]
-  set num-of-bugs-list n-values 20 [random 100]
+  set num-of-bugs-list n-values 8 [random 8]
   ;;look at how to randomize the n-values or if there's any significance to it
 
   ;;set bugs breed properties
@@ -144,11 +145,13 @@ to implement-randomizedValues-on-breeds
 
 
   ;; set security researcher breed properties
-  set ability-to-findBugs-list n-values 20 [random 100]
+  ;;set ability-to-findBugs-list n-values 20 [random 100]
+  ;;set ability-to-findBugs-list ["Noob" "Script Kiddie" "Hacker" "Pro Hacker" "Elite Hacker" "Guru" "Omniscient"] ;; Find a way to translate these to numbers
+  set ability-to-findBugs-list ["Noob" "Pro Hacker" "Guru" "Omniscient"] ;; Find a way to translate these to numbers
   set knowledge-level-list n-values 20 [random 100]
   set speed-to-analyze-list n-values 20 [random 100]
   set platform-knowledge-list n-values 20 [random 100]
-  set honesty-list n-values 20 [random 100] ; measure of honesty and dishonesty of, for now let's give it a range
+  set honesty-list [true false];;n-values 20 [random 100] ; measure of honesty and dishonesty of, for now let's give it a range
   set motivation-list  n-values 20 [random 100];pride,vanity,brandInterest,
   set access-to-resources-list n-values 20 [random 100]
   set availability-to-research-list n-values 20 [random 100]
@@ -161,7 +164,7 @@ to implement-randomizedValues-on-breeds
     ;set for this case we will have to provide a list of values for each company. investigate how to make it more randomized;
 
     set payoutRange one-of payout-range-list;
-    show payoutRange
+    ;show payoutRange
     set breachHistory one-of breach-history-list;
     set awareness one-of awareness-list;
     set timeOnBBP one-of time-on-bbp-list;
@@ -220,29 +223,70 @@ end
 to go
   tick ;; time system to advance by 1 day
   ;;ask turtles ;; ask the turtles to move around , move in diferent directions randomly
+
   ask securityResearchers [
+    ;show abilityToFindBugs
+    ;let researcher-ability abilityToFindBugs
+    ;let researcher-honesty honesty
     setxy random-xcor random-ycor
-    look-for-bugs
+    look-for-bugs honesty abilityToFindBugs
   ]
-
-
-  set %vulnerable (count turtles with [color = red]/ count turtles) * 100 ;; defining the infected variable.
+  calc-vulnerable-percentage
   if %vulnerable = 0 [stop] ;; if all are safe then end the simulation
 end
 
-to look-for-bugs
 
-  ask companies [
-    let researchers-here securityResearchers-here
-    if any? researchers-here [
-      let target-company self
-      ask researchers-here [
-        ask target-company [
+to calc-vulnerable-percentage
+let total-companies count companies
+show (word "Total Companies: " total-companies)
+
+let total-companies-with-bugs count companies with [num-of-bugs > 0]
+show (word "Total Companies with bugs: " total-companies-with-bugs)
+
+let vulnerability-percentage 0
+if total-companies > 0 [
+  set vulnerability-percentage (total-companies-with-bugs / total-companies) * 100
+]
+
+show (word "% Vulnerable: " vulnerability-percentage);; defining the infected variable.
+
+ set %vulnerable vulnerability-percentage
+
+end
+
+to look-for-bugs [researcher-honesty researcher-ability]
+;show researcher-honesty
+let xyz one-of companies-here
+  if xyz != nobody [; If company has been found to be in the same patch as a researcher. $$$gateway to heaven
+    ;show xyz
+    ;;;;;; Checks for Security Researchers start here.
+    if researcher-honesty[;; only work on vulnerabilities if a researcher is honest , think of the else condition later on if need be to introduce black hat operators
+      ;show researcher-honesty
+      if researcher-ability = "Pro Hacker" or researcher-ability = "Omnicient" [
+        show researcher-ability
+        ask xyz [
+          ;show (word "Before: " num-of-bugs)
+          if num-of-bugs > 0 [ ;;Begin to work on each property
+
           set num-of-bugs num-of-bugs - 1
-        ]
+          ;show (word "After: " num-of-bugs)
+          set label (word "CID: " who " - Bugs: " num-of-bugs)]
+        ];may be add functionality to increase bugs after some time.
       ]
     ]
   ]
+
+;  ask companies [
+;    let researchers-here securityResearchers-here
+;    if any? researchers-here [
+;      let target-company self
+;      ask researchers-here [
+;        ask target-company [
+;          set num-of-bugs num-of-bugs - 1
+;        ]
+;      ]
+;    ]
+;  ]
 
 ;  let target-company one-of companies;;
 ;  let researcher-on-company securityResearchers-on target-company
@@ -366,7 +410,7 @@ num-of-researchers
 num-of-researchers
 2
 80
-29.0
+39.0
 1
 1
 NIL
@@ -387,29 +431,11 @@ SLIDER
 NIL
 HORIZONTAL
 
-PLOT
-10
-385
-210
-535
-Hacker Effectiveness 
-days
-successful bounties 
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "plot %vulnerable"
-
 MONITOR
-17
-556
-178
-601
+517
+580
+678
+625
 % of Vulnerable Systems
 %vulnerable
 17
@@ -417,11 +443,11 @@ MONITOR
 11
 
 MONITOR
-15
-616
-72
-661
-Days
+515
+640
+681
+685
+Days taken
 ticks
 0
 1
@@ -451,7 +477,7 @@ payoutCapability-rate
 payoutCapability-rate
 0
 100
-61.0
+65.0
 1
 1
 NIL
@@ -516,20 +542,51 @@ num-of-companies
 num-of-companies
 0
 100
-22.0
+28.0
 1
 1
 NIL
 HORIZONTAL
 
+PLOT
+380
+388
+813
+538
+Overall Vulnerabilities in the BBP
+Days
+Vulnerabilites
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -8053223 true "" "plot %vulnerable"
+
 @#$#@#$#@
 ##ChangeLog 
+V1.1
 1. Added a new breed - bugs, to simulate security researchers hunting for bugs 
 	this will also help the breed
 --- this is still not working accordingly 
 
 2. Having troubles reflecting the changes on different breeds. One breed can't change the breed of another 
 
+V1.2
+===
+Fixed above issues 
+1. Now working on incorporating the different properties of agents in the bbp
+2. Function for showing vulnerable systems working 
+3. Figure out other visualization data. 
+4. Figure if we need to simulate that the company initially gets vulnerability or simulate if a companies' vulnerability is gradually discovered and they gradually decrease. 
+5. Added condition for researcher to only solve vulnerability if he/she is honest 
+6. Might have to assume all  companies join at the same time, to eliminate complexity with introducing new companies. But this can be fixed in the near future 
+7. Access to resources for researchers will give a researcher a chance to increase skills hence increasing there rank to something else 
+8. Rethink the whole idea of time. May be ticks can now represent seconds/minutes instead of days. Since simulation seems to take way longer than usual. 
+9. 
 @#$#@#$#@
 default
 true
