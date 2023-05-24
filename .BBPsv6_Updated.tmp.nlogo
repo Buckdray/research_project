@@ -546,8 +546,7 @@ V1.3
 	verification-process-time
 5. Moved payout capability to the companies instead of the BBP 
 6. Vulnerabiility and breach history might not be interessting. 
-7. Research how each of the properties of the BBP affects other agents then implement. 
-
+7. Research how each of the properties of t
 @#$#@#$#@
 default
 true
