@@ -183,6 +183,8 @@ to implement-randomizedValues-on-breeds
   let verification-process-value one-of [ "Automated" "Manual"]
   let verification-process-time-value one-of ["Fast" "Lengthy" ]
 
+
+  ;focus here
   ask patches [;Improve this at a later stage to simulate multiple bug bounty programs
     set reliability reliability-value
     ;set payoutCapability payoutCapability-value
@@ -477,7 +479,7 @@ num-of-companies
 num-of-companies
 0
 100
-14.0
+77.0
 1
 1
 NIL
