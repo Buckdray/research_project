@@ -1,17 +1,23 @@
 globals [
   %vulnerable
+  %overallSatisfaction-Researchers
+  %overallSatisfaction-Companies
   vulnerability-data
   ;;Ranges to be used with companies
   ;payout-range-list
+
+  ;;Ranges to be used with companies
   payoutCapability-list
   breach-history-list
   awareness-list
   time-on-bbp-list
   vulnerability-history-list
   num-of-bugs-list
+  validity-period-list
 
-  ;;Ranges to be used with companies
   complexity-list
+
+
 
   ;;Ranges to be used with researchers
   ability-to-findBugs-list
@@ -31,7 +37,7 @@ globals [
   ;payoutCapability-list
   responsetime-list
   oligopoly-list
-  validity-period-list
+
 
 
 ] ;;global variable vulnerable created
@@ -41,7 +47,7 @@ patches-own [ ; the entire patch space is considered a bug bounty program
  oligopoly
  ;payoutCapability
  responsetime
- validity-period
+ ;validity-period
  verification-process
  verification-process-time
 ]
@@ -53,7 +59,7 @@ patches-own [ ; the entire patch space is considered a bug bounty program
 
 ;breed [bugbountyprograms bbp] ;check this, removed bug bounty programs,
 breed [companies company]
-breed [bugs bug]
+
 breed [securityResearchers researcher]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -78,6 +84,8 @@ companies-own [
   breachHistory;
   timeOnBBP;
   num-of-bugs;
+  service-satifaction
+  validity-period
 ]
 
 
@@ -144,10 +152,12 @@ to implement-randomizedValues-on-breeds
   set time-on-bbp-list n-values 20 [random 100]
   set vulnerability-history-list n-values 20 [random 100]
   set num-of-bugs-list n-values 8 [random 8]
+  set validity-period-list  (list "30 days" "90 days" "180 days" "360 days" "Undefined")
+  ;set validity-period-value one-of ["30 days" "90 days" "180 days" "360 days" "Undefined"]
   ;;look at how to randomize the n-values or if there's any significance to it
 
-  ;;set bugs breed properties
-  set complexity-list n-values 20 [random 100]
+
+
 
 
   ;; set security researcher breed properties
@@ -165,20 +175,21 @@ to implement-randomizedValues-on-breeds
   set creativity-list n-values 20 [random 100]
 
 
-  let reliability-value random-float 1.0
+  let reliability-value random 10
   ;let payoutCapability-value one-of [10000 20000 30000 50000 50000 100000 200000 250000 300000 500000]
   let responsetime-value random-float 10
   let oligopoly-value one-of ["Low" "Medium" "High"]
-  let validity-period-value one-of ["30 days" "90 days" "180 days" "360 days" "Undefined"]
+  ;let validity-period-value one-of ["30 days" "90 days" "180 days" "360 days" "Undefined"]
   let verification-process-value one-of [ "Automated" "Manual"]
   let verification-process-time-value one-of ["Fast" "Lengthy" ]
+
 
   ask patches [;Improve this at a later stage to simulate multiple bug bounty programs
     set reliability reliability-value
     ;set payoutCapability payoutCapability-value
     set responsetime responsetime-value
     set oligopoly oligopoly-value
-    set validity-period validity-period-value
+    ;set validity-period validity-period-value
     set verification-process verification-process-value
     set verification-process-time verification-process-time-value
 
@@ -200,6 +211,7 @@ to implement-randomizedValues-on-breeds
     set timeOnBBP one-of time-on-bbp-list;
     set vulnerabilityHistory one-of vulnerability-history-list;vulnerabilities found during
     set num-of-bugs one-of num-of-bugs-list
+    set validity-period one-of validity-period-list
 
    ]
    ;figure out a way to randomize company links as well, should be dynamically linked to the number of companies placed in the environment.
@@ -238,7 +250,7 @@ to go
     ;let researcher-ability abilityToFindBugs
     ;let researcher-honesty honesty
     setxy random-xcor random-ycor
-    look-for-bugs honesty abilityToFindBugs
+    look-for-bugs honesty abilityToFindBugs motivation
   ]
   calc-vulnerable-percentage
   if %vulnerable = 0 [stop] ;; if all are safe then end the simulation
@@ -247,23 +259,23 @@ end
 
 to calc-vulnerable-percentage
 let total-companies count companies
-show (word "Total Companies: " total-companies)
+;show (word "Total Companies: " total-companies)
 
 let total-companies-with-bugs count companies with [num-of-bugs > 0]
-show (word "Total Companies with bugs: " total-companies-with-bugs)
+;show (word "Total Companies with bugs: " total-companies-with-bugs)
 
 let vulnerability-percentage 0
 if total-companies > 0 [
   set vulnerability-percentage (total-companies-with-bugs / total-companies) * 100
 ]
 
-show (word "% Vulnerable: " vulnerability-percentage);; defining the infected variable.
+;show (word "% Vulnerable: " vulnerability-percentage);; defining the infected variable.
 
  set %vulnerable vulnerability-percentage
 
 end
 
-to look-for-bugs [researcher-honesty researcher-ability]
+to look-for-bugs [researcher-honesty researcher-ability researcher-motivation]
 ;show researcher-honesty
 ;let abc one-of neighbors
 ;if abc != nobody [
@@ -271,17 +283,33 @@ to look-for-bugs [researcher-honesty researcher-ability]
 ;]
 
 let xyz one-of companies-here
+
   if xyz != nobody [; If company has been found to be in the same patch as a researcher. $$$gateway to heaven
     ;show xyz
-    ;;;;;; Checks for Security Researchers start here.
 
-   ;; let patch-
-    let patch-validity-period [validity-period] of xyz
-    show patch-validity-period
-    if researcher-honesty[;; only work on vulnerabilities if a researcher is honest , think of the else condition later on if need be to introduce black hat operators
+
+    let bbp-reliability [reliability] of xyz
+    let bbp-oligopoly [oligopoly] of xyz
+    let bbp-responsetime [responsetime] of xyz
+    ;let patch-validity-period [validity-period] of xyz
+    let bbp-verification-process [verification-process] of xyz
+    let bbp-verification-process-time [verification-process-time] of xyz
+
+;    show patch-reliability
+;    show patch-oligopoly
+;    show patch-responsetime
+;    show patch-verification-process
+;    show patch-verification-process-time
+;    Uncomment above to confirm details of the patches and the researcher is on.
+
+    ;;;;;; Checks for Security Researchers start here.Beginning with researcher honesty
+    ifelse bbp-reliability > 5 [;based on this research https://www.emerald.com/insight/content/doi/10.1108/IJCHM-06-2018-0532/full/html#sec011 Overall, 50-68 per cent of customers gave the highest rating, with Foodora having the least satisfied customers and UberEats having the most satisfied customers
+      if researcher-honesty[;; only work on vulnerabilities if a researcher is honest , think of the else condition later on if need be to introduce black hat operators
       ;show researcher-honesty
+
+      set motivation motivation + 1
       if researcher-ability = "Pro Hacker" or researcher-ability = "Omnicient" [
-        show researcher-ability
+        ;show researcher-ability
         ask xyz [
           ;show (word "Before: " num-of-bugs)
           if num-of-bugs > 0 [ ;;Begin to work on each property
@@ -291,7 +319,26 @@ let xyz one-of companies-here
           set label (word "CID: " who " - Bugs: " num-of-bugs)]
         ];may be add functionality to increase bugs after some time.
       ]
+     ]
     ]
+    [; when Reliability is less than 5 ; also add a way you can increase this reliability
+        if researcher-honesty[;; only work on vulnerabilities if a researcher is honest , think of the else condition later on if need be to introduce black hat operators
+      ;show researcher-honesty
+      set motivation motivation - 1
+      if researcher-ability = "Pro Hacker" or researcher-ability = "Omnicient" [
+        ;show researcher-ability
+        ask xyz [
+          ;show (word "Before: " num-of-bugs)
+          if num-of-bugs > 0 [ ;;Begin to work on each property
+          set num-of-bugs num-of-bugs - 1
+          ;show (word "After: " num-of-bugs)
+          set label (word "CID: " who " - Bugs: " num-of-bugs)]
+        ];may be add functionality to increase bugs after some time.
+      ]
+     ]
+
+    ]
+
   ]
 
 ;  ask companies [
@@ -323,40 +370,6 @@ let xyz one-of companies-here
 ;    ]
 ;  ]
 end
-
-
-
-
-;;Rulesets for security Researchers
-
-
-
-
-
-
-
-
-
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;             Creating the regions representing bug bounty programs
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-;;to bugbountyprograms
-;;  ;; patch procedure
-;;  ;; setup BBP1 one on the right
-;;  ask patches [if (distancexy (0.6 * max-pxcor) 0) < 5
-;;  [ set pcolor green ]
-;;  ;; setup BBP2 on the lower-left
-;;  if (distancexy (-0.6 * max-pxcor) (-0.6 * max-pycor)) < 5
-;;  [ set pcolor orange ]
-;;  ;; setup BBP3 on the upper-left
-;;  if (distancexy (-0.7 * max-pxcor) (0.7 * max-pycor)) < 5
-;;  [ set pcolor violet ]
-;;  ]
-;;end
 @#$#@#$#@
 GRAPHICS-WINDOW
 870
@@ -428,7 +441,7 @@ num-of-researchers
 num-of-researchers
 2
 80
-30.0
+80.0
 1
 1
 NIL
@@ -465,7 +478,7 @@ num-of-companies
 num-of-companies
 0
 100
-18.0
+77.0
 1
 1
 NIL
@@ -478,7 +491,7 @@ PLOT
 238
 Overall Vulnerabilities in the BBP
 Days
-Vulnerabilites
+Vulnerabilites Percentage
 0.0
 10.0
 0.0
@@ -545,8 +558,20 @@ V1.3
 	verification-process
 	verification-process-time
 5. Moved payout capability to the companies instead of the BBP 
-6. Vulnerabiility and breach history might not be interessting. 
-7. Research how each of the properties of t
+6. Vulnerabiility and breach history might not be necessary for now. 
+7. Research how each of the properties of the BBP affects other agents then implement. 
+
+V1.4
+====
+1. Added service satisfaction property to companies , to be use in conjuction with 
+2. Added motivation to researchers 
+3. Removed most bugs property as it is irrelevant for our scenario for now 
+4. Try and make more scenarios geered towards bbp properties: 
+- reliability
+- oligopoly
+- responsetime
+- verification-process
+- verification-process-time
 @#$#@#$#@
 default
 true
