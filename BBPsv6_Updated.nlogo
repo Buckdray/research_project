@@ -32,14 +32,10 @@ globals [
   experience-level-list
   creativity-list
 
-
   reliability-list
   ;payoutCapability-list
   responsetime-list
   oligopoly-list
-
-
-
 ] ;;global variable vulnerable created
 
 patches-own [ ; the entire patch space is considered a bug bounty program
@@ -50,14 +46,12 @@ patches-own [ ; the entire patch space is considered a bug bounty program
  ;validity-period
  verification-process
  verification-process-time
+ company-policy
+ resources-available
+ resolution-process
+
 ]
 
-
-
-
-;create breeds in the environment for bug bounty programs, companies, and security researchers.
-
-;breed [bugbountyprograms bbp] ;check this, removed bug bounty programs,
 breed [companies company]
 
 breed [securityResearchers researcher]
@@ -88,7 +82,6 @@ companies-own [
   validity-period
 ]
 
-
 securityResearchers-own [
   abilityToFindBugs
   knowledgeLevel
@@ -111,38 +104,37 @@ securityResearchers-own [
 ;             Create the environment
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
 to setup
   clear-all
-
   create-companies num-of-companies[
     set color red
     set shape "circle"
     set size  4
     setxy random-xcor random-ycor
   ]
+
   create-securityResearchers num-of-researchers[
     set color green
     set size  2
     setxy random-xcor random-ycor
   ]
+
   ;; set properties for the breeds
   implement-randomizedValues-on-breeds
+  implement-bugbountyprogram-functionality
+
   ask companies [
     set label (word "CID: " who " - Bugs: " num-of-bugs)
   ]
 
+;  ask patches [
+;    show reliability
+;   show oligopoly
+;  ]
   reset-ticks
 end
 
-
 to implement-randomizedValues-on-breeds
-;  set reliability-list n-values 20 [random 100]
-;  set payoutCapability-list n-values 20 [random 100]
-;  set responsetime-list n-values 20 [random 100]
-;  set oligopoly-list n-values 20 [random 100]
-;
 
   ;; set company breed properties
   set payoutCapability-list (list 10000 20000 30000 50000 50000 100000 200000 250000 300000 500000)
@@ -155,16 +147,11 @@ to implement-randomizedValues-on-breeds
   set validity-period-list  (list "30 days" "90 days" "180 days" "360 days" "Undefined")
   ;set validity-period-value one-of ["30 days" "90 days" "180 days" "360 days" "Undefined"]
   ;;look at how to randomize the n-values or if there's any significance to it
-
-
-
-
-
   ;; set security researcher breed properties
   ;;set ability-to-findBugs-list n-values 20 [random 100]
   ;;set ability-to-findBugs-list ["Noob" "Script Kiddie" "Hacker" "Pro Hacker" "Elite Hacker" "Guru" "Omniscient"] ;; Find a way to translate these to numbers
   set ability-to-findBugs-list ["Noob" "Pro Hacker" "Guru" "Omniscient"] ;; Find a way to translate these to numbers
-  set knowledge-level-list n-values 20 [random 100]
+  set knowledge-level-list n-values 20 [random 100];removed as considered duplicate
   set speed-to-analyze-list n-values 20 [random 100]
   set platform-knowledge-list n-values 20 [random 100]
   set honesty-list [true false];;n-values 20 [random 100] ; measure of honesty and dishonesty of, for now let's give it a range
@@ -175,35 +162,8 @@ to implement-randomizedValues-on-breeds
   set creativity-list n-values 20 [random 100]
 
 
-  let reliability-value random 10
-  ;let payoutCapability-value one-of [10000 20000 30000 50000 50000 100000 200000 250000 300000 500000]
-  let responsetime-value random-float 10
-  let oligopoly-value one-of ["Low" "Medium" "High"]
-  ;let validity-period-value one-of ["30 days" "90 days" "180 days" "360 days" "Undefined"]
-  let verification-process-value one-of [ "Automated" "Manual"]
-  let verification-process-time-value one-of ["Fast" "Lengthy" ]
-
-
-  ;focus here
-  ask patches [;Improve this at a later stage to simulate multiple bug bounty programs
-    set reliability reliability-value
-    ;set payoutCapability payoutCapability-value
-    set responsetime responsetime-value
-    set oligopoly oligopoly-value
-    ;set validity-period validity-period-value
-    set verification-process verification-process-value
-    set verification-process-time verification-process-time-value
-
-  ;show (word "Reliability: " reliability)
-  ;show (word "Payout Capability: " payoutCapability)
-  ;show (word "Response Time: " responsetime)
-  ;show (word "Oligopoly: " oligopoly)
-  ]
-
-
   ask companies [
     ;set for this case we will have to provide a list of values for each company. investigate how to make it more randomized;
-
     ;set payoutRange one-of payout-range-list;
     set payoutCapability one-of payoutCapability-list
     ;show payoutRange
@@ -214,7 +174,7 @@ to implement-randomizedValues-on-breeds
     set num-of-bugs one-of num-of-bugs-list
     set validity-period one-of validity-period-list
 
-   ]
+  ]
    ;figure out a way to randomize company links as well, should be dynamically linked to the number of companies placed in the environment.
    ;;let num-links random count companies  ;
    ;show num-links
@@ -242,9 +202,82 @@ to implement-randomizedValues-on-breeds
   ]
 end
 
+to implement-bugbountyprogram-functionality
+  ;;set BBP properties
+  ;;determine bbp reliability
+
+  let resources-available-value one-of ["Limited" "Adequate" "Abundant"]
+  let resolution-factor-value one-of ["Quick" "Moderate" "Lengthy"]
+  let responsetime-value responsetime-determination resolution-factor-value;;random-float 10 ; This value is influenced by so many things like company policy etc
+  let oligopoly-value one-of ["Low" "Medium" "High"]
+  let verification-process-value one-of [ "Automated" "Manual" "Hybrid"]
+  let verification-process-time-value verification-process-determination verification-process-value;;one-of ["Fast" "Moderate" "Lengthy"]
+  let company-policy-value one-of [ "Strict" "Moderate" "Flexible"] ;;
+  let reliability-value bbp-reliability-determination responsetime-value
+
+  ;show verification-process-value
+  ask patches [;Improve this at a later stage to simulate multiple bug bounty programs
+    set resources-available resources-available-value
+    set resolution-process resolution-factor-value
+    set responsetime responsetime-value
+    set oligopoly oligopoly-value
+    set verification-process verification-process-value
+    set reliability reliability-value
+    set verification-process-time verification-process-time-value
+    set company-policy company-policy-value
+  ]
+end
+
+to-report bbp-reliability-determination [responsetime-used]
+
+  ifelse responsetime-used >= 1 and responsetime-used <= 4 [
+    report "Reliable"  ; Return 1 if the condition is met
+  ] [
+    ifelse responsetime-used >= 5 and responsetime-used <= 8 [
+      report "Moderately Reliable"  ; Return 1 if the condition is met
+    ][
+      report "Unreliable"
+    ]
+  ]
+end
+
+to-report verification-process-determination [process-used]
+  ifelse process-used = "Automated" [
+    report "Fast"  ; Return fast if the condition is met
+  ] [
+    ifelse process-used = "Manual" [
+      report "Slow"  ; Return slow if the condition is met
+    ]
+    [
+      ;when hybrid
+      report "Moderate"
+    ]
+  ]
+end
+
+to-report responsetime-determination [resolution-factor-used]
+
+  let options-quick [1 2 3 4] ; this accounts for week 1-4 (a month)
+  let options-moderate [5 6 7 8]; this accounts for 2 months
+  let options-lengthy [9 10 11 12]; this accounts for 3 months
+
+  ifelse resolution-factor-used = "Quick"[
+     report one-of options-quick
+  ][
+    ifelse resolution-factor-used = "Moderate"[
+      report one-of options-moderate
+    ][
+      report one-of options-lengthy
+    ]
+
+  ]
+
+end
+
 to go
   tick ;; time system to advance by 1 day
   ;;ask turtles ;; ask the turtles to move around , move in diferent directions randomly
+  let ticks-years ticks-to-years ticks
 
   ask securityResearchers [
     ;show abilityToFindBugs
@@ -257,6 +290,99 @@ to go
   if %vulnerable = 0 [stop] ;; if all are safe then end the simulation
 end
 
+to look-for-bugs [researcher-honesty researcher-ability researcher-motivation]
+  ;show researcher-honesty
+  ;let abc one-of neighbors
+  ;if abc != nobody [
+  ;  show abc
+  ;]
+
+  let xyz one-of companies-here
+  if xyz != nobody [; If company has been found to be in the same patch as a researcher. Meaning a researcher is interacting with the company
+    ;show xyz
+    let bbp-reliability [reliability] of xyz
+    let bbp-oligopoly [oligopoly] of xyz
+    let bbp-responsetime [responsetime] of xyz
+    ;let patch-validity-period [validity-period] of xyz
+    let bbp-verification-process [verification-process] of xyz
+    let bbp-verification-process-time [verification-process-time] of xyz
+
+    ;    show patch-reliability
+    ;    show patch-oligopoly
+    ;    show patch-responsetime
+    ;    show patch-verification-process
+    ;    show patch-verification-process-time
+    ;    Uncomment above to confirm details of the patches and the researcher is on.
+    ;;;;;; Checks for Security Researchers start here.Beginning with researcher honesty
+    ifelse bbp-reliability = "Reliable" [;based on this research https://www.emerald.com/insight/content/doi/10.1108/IJCHM-06-2018-0532/full/html#sec011 Overall, 50-68 per cent of customers gave the highest rating, with Foodora having the least satisfied customers and UberEats having the most satisfied customers
+      ifelse researcher-honesty[;; only work on vulnerabilities if a researcher is honest , think of the else condition later on if need be to introduce black hat operators
+      ;show researcher-honesty
+      set motivation motivation + 0.5
+      if researcher-ability = "Pro Hacker" or researcher-ability = "Omnicient" [
+        ;show researcher-ability
+        ask xyz [
+          ;show (word "Before: " num-of-bugs)
+          if num-of-bugs > 0 [ ;;Begin to work on each property
+
+          set num-of-bugs num-of-bugs - 1
+          ;show (word "After: " num-of-bugs)
+          set label (word "CID: " who " - Bugs: " num-of-bugs)]
+        ];may be add functionality to increase bugs after some time.
+       ]
+      ][
+
+;        show "Researcher Dishonest, Reliable Program"
+;        show "/n"
+;
+      ]
+    ]
+    [
+    ifelse bbp-reliability = "Moderately Reliable" [
+      ifelse researcher-honesty[;; only work on vulnerabilities if a researcher is honest , think of the else condition later on if need be to introduce black hat operators
+      ;show researcher-honesty
+      set motivation motivation + 1
+      if researcher-ability = "Pro Hacker" or researcher-ability = "Omnicient" [
+        ;show researcher-ability
+        ask xyz [
+          ;show (word "Before: " num-of-bugs)
+          if num-of-bugs > 0 [ ;;Begin to work on each property
+
+          set num-of-bugs num-of-bugs - 1
+          ;show (word "After: " num-of-bugs)
+          set label (word "CID: " who " - Bugs: " num-of-bugs)]
+        ];may be add functionality to increase bugs after some time.
+      ]
+        ] [
+;          show "Researcher Dishonest, Moderately Reliable Program"
+;           show "/n"
+;
+        ]
+    ]
+     [ ;reliability is low
+          ; when Reliability is less than 5 ; also add a way you can increase this reliability
+      ifelse researcher-honesty[;; only work on vulnerabilities if a researcher is honest , think of the else condition later on if need be to introduce black hat operators
+        ;show researcher-honesty
+        set motivation motivation - 1
+        if researcher-ability = "Pro Hacker" or researcher-ability = "Omnicient" [
+          ;show researcher-ability
+          ask xyz [
+            ;show (word "Before: " num-of-bugs)
+            if num-of-bugs > 0 [ ;;Begin to work on each property
+              set num-of-bugs num-of-bugs - 1
+              ;show (word "After: " num-of-bugs)
+              set label (word "CID: " who " - Bugs: " num-of-bugs)
+            ]
+          ];may be add functionality to increase bugs after some time.
+        ]
+        ][
+;         show "Researcher Dishonest,  Unreliable Program"
+;         show "/n"
+;
+        ]
+     ]
+    ]
+  ]
+end
 
 to calc-vulnerable-percentage
 let total-companies count companies
@@ -276,100 +402,10 @@ if total-companies > 0 [
 
 end
 
-to look-for-bugs [researcher-honesty researcher-ability researcher-motivation]
-;show researcher-honesty
-;let abc one-of neighbors
-;if abc != nobody [
-;  show abc
-;]
-
-let xyz one-of companies-here
-
-  if xyz != nobody [; If company has been found to be in the same patch as a researcher. $$$gateway to heaven
-    ;show xyz
-
-
-    let bbp-reliability [reliability] of xyz
-    let bbp-oligopoly [oligopoly] of xyz
-    let bbp-responsetime [responsetime] of xyz
-    ;let patch-validity-period [validity-period] of xyz
-    let bbp-verification-process [verification-process] of xyz
-    let bbp-verification-process-time [verification-process-time] of xyz
-
-;    show patch-reliability
-;    show patch-oligopoly
-;    show patch-responsetime
-;    show patch-verification-process
-;    show patch-verification-process-time
-;    Uncomment above to confirm details of the patches and the researcher is on.
-
-    ;;;;;; Checks for Security Researchers start here.Beginning with researcher honesty
-    ifelse bbp-reliability > 5 [;based on this research https://www.emerald.com/insight/content/doi/10.1108/IJCHM-06-2018-0532/full/html#sec011 Overall, 50-68 per cent of customers gave the highest rating, with Foodora having the least satisfied customers and UberEats having the most satisfied customers
-      if researcher-honesty[;; only work on vulnerabilities if a researcher is honest , think of the else condition later on if need be to introduce black hat operators
-      ;show researcher-honesty
-
-      set motivation motivation + 1
-      if researcher-ability = "Pro Hacker" or researcher-ability = "Omnicient" [
-        ;show researcher-ability
-        ask xyz [
-          ;show (word "Before: " num-of-bugs)
-          if num-of-bugs > 0 [ ;;Begin to work on each property
-
-          set num-of-bugs num-of-bugs - 1
-          ;show (word "After: " num-of-bugs)
-          set label (word "CID: " who " - Bugs: " num-of-bugs)]
-        ];may be add functionality to increase bugs after some time.
-      ]
-     ]
-    ]
-    [; when Reliability is less than 5 ; also add a way you can increase this reliability
-        if researcher-honesty[;; only work on vulnerabilities if a researcher is honest , think of the else condition later on if need be to introduce black hat operators
-      ;show researcher-honesty
-      set motivation motivation - 1
-      if researcher-ability = "Pro Hacker" or researcher-ability = "Omnicient" [
-        ;show researcher-ability
-        ask xyz [
-          ;show (word "Before: " num-of-bugs)
-          if num-of-bugs > 0 [ ;;Begin to work on each property
-          set num-of-bugs num-of-bugs - 1
-          ;show (word "After: " num-of-bugs)
-          set label (word "CID: " who " - Bugs: " num-of-bugs)]
-        ];may be add functionality to increase bugs after some time.
-      ]
-     ]
-
-    ]
-
-  ]
-
-;  ask companies [
-;    let researchers-here securityResearchers-here
-;    if any? researchers-here [
-;      let target-company self
-;      ask researchers-here [
-;        ask target-company [
-;          set num-of-bugs num-of-bugs - 1
-;        ]
-;      ]
-;    ]
-;  ]
-
-;  let target-company one-of companies;;
-;  let researcher-on-company securityResearchers-on target-company
-;  if any? researcher-on-company
-;  [
-;    ask researchers-on-company [
-;      ask target-company [
-;        set num-of-bugs num-of-bugs - 1
-;      ]
-;    ]
-;  ]
-
-;  if [num-of-bugs] of target-company  > 0 [
-;    ask target-company [
-;      set num-of-bugs num-of-bugs - 1 ;;
-;    ]
-;  ]
+to-report ticks-to-years [tick-received]
+  let ticks-per-year 365 ; assuming 365 ticks per year
+  let years ticks / ticks-per-year
+  report years
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -442,7 +478,7 @@ num-of-researchers
 num-of-researchers
 2
 80
-80.0
+43.0
 1
 1
 NIL
@@ -479,7 +515,7 @@ num-of-companies
 num-of-companies
 0
 100
-77.0
+100.0
 1
 1
 NIL
@@ -522,6 +558,17 @@ MONITOR
 Researchers
 Count securityResearchers
 17
+1
+11
+
+MONITOR
+517
+400
+605
+445
+Years Taken
+ticks-to-years ticks
+2
 1
 11
 
