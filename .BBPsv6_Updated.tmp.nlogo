@@ -7,16 +7,16 @@ globals [
   ;payout-range-list
 
   ;;Ranges to be used with companies
-  payoutCapability-list
-  breach-history-list
-  awareness-list
-  time-on-bbp-list
+
+  ;awareness-list
+  ;breach-history-list
+  payout_capability-list
+  talent_list
+  information_security_policy_list
   vulnerability-history-list
   num-of-bugs-list
   validity-period-list
-
-  complexity-list
-
+  status_list
 
 
   ;;Ranges to be used with researchers
@@ -39,11 +39,12 @@ globals [
 ] ;;global variable vulnerable created
 
 patches-own [ ; the entire patch space is considered a bug bounty program
+
+ ;payoutCapability
+ ;validity-period
  reliability
  oligopoly
- ;payoutCapability
  responsetime
- ;validity-period
  verification-process
  verification-process-time
  company-policy
@@ -62,24 +63,20 @@ breed [securityResearchers researcher]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;bugbountyprograms-own [ ; check this
-;  payoutCapability
-;  reliability
-;  oligopoly
-;  responsetime ;
-;  modeOfOperation ; whiteHat and blackHat
-;]
-
 companies-own [
   ;payoutRange;
-  payoutCapability
-  awareness;
-  vulnerabilityHistory ;vulnerabilities found during
-  breachHistory;
-  timeOnBBP;
+  ;awareness;
+  ;breachHistory;
+  payout_capability
+  talent
+  information_security_policy
+  vulnerability_history ;vulnerabilities found during bbp
+  time_on_BBP;
   num-of-bugs;
-  service-satifaction
+  initial-num-of-bugs;
+  service-satisfaction
   validity-period
+  status
 ]
 
 securityResearchers-own [
@@ -95,9 +92,6 @@ securityResearchers-own [
   creativity
   memory;; to develop module for this, may be not needed for now
 ]
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -137,18 +131,16 @@ end
 to implement-randomizedValues-on-breeds
 
   ;; set company breed properties
-  set payoutCapability-list (list 10000 20000 30000 50000 50000 100000 200000 250000 300000 500000)
-  ;set payout-range-list n-values 20 [random 100]
-  set breach-history-list n-values 20 [random 100]
-  set awareness-list n-values 20 [random 100]
-  set time-on-bbp-list n-values 20 [random 100]
-  set vulnerability-history-list n-values 20 [random 100]
-  set num-of-bugs-list n-values 8 [random 8]
-  set validity-period-list  (list "30 days" "90 days" "180 days" "360 days" "Undefined")
-  ;set validity-period-value one-of ["30 days" "90 days" "180 days" "360 days" "Undefined"]
-  ;;look at how to randomize the n-values or if there's any significance to it
-  ;; set security researcher breed properties
-  ;;set ability-to-findBugs-list n-values 20 [random 100]
+  ;set breach-history-list n-values 20 [random 100]
+  ;set awareness-list n-values 20 [random 100] ;the higher the better for hunters
+  ;set time-on-bbp-list 0; not sure if i need this
+  ;set vulnerability-history-list n-values 20 [random 100] ; not sure if this is needed https://www.hackerone.com/year-hackerones-bug-bounty-program
+  set num-of-bugs-list n-values 8 [random 20] ; develop a module to increase vulnerabilities; based on talent  and technology policy
+  set payout_capability-list (list 10000 20000 30000 50000 50000 100000 200000 250000 300000 500000);Value in yen
+  set talent_list  ["Low" "Medium" "High"]
+  set information_security_policy_list  ["Strict" "Moderate" "Relaxed"]
+  set validity-period-list  (list 30  90  180  360  "Undefined")
+
   ;;set ability-to-findBugs-list ["Noob" "Script Kiddie" "Hacker" "Pro Hacker" "Elite Hacker" "Guru" "Omniscient"] ;; Find a way to translate these to numbers
   set ability-to-findBugs-list ["Noob" "Pro Hacker" "Guru" "Omniscient"] ;; Find a way to translate these to numbers
   set knowledge-level-list n-values 20 [random 100];removed as considered duplicate
@@ -156,7 +148,7 @@ to implement-randomizedValues-on-breeds
   set platform-knowledge-list n-values 20 [random 100]
   set honesty-list [true false];;n-values 20 [random 100] ; measure of honesty and dishonesty of, for now let's give it a range
   set motivation-list  n-values 20 [random 100];pride,vanity,brandInterest,
-  set access-to-resources-list n-values 20 [random 100]
+  ;set access-to-resources-list n-values 20 [random 100]
   set availability-to-research-list n-values 20 [random 100]
   set experience-level-list n-values 20 [random 100]
   set creativity-list n-values 20 [random 100]
@@ -165,24 +157,21 @@ to implement-randomizedValues-on-breeds
   ask companies [
     ;set for this case we will have to provide a list of values for each company. investigate how to make it more randomized;
     ;set payoutRange one-of payout-range-list;
-    set payoutCapability one-of payoutCapability-list
+
     ;show payoutRange
-    set breachHistory one-of breach-history-list;
-    set awareness one-of awareness-list;
-    set timeOnBBP one-of time-on-bbp-list;
-    set vulnerabilityHistory one-of vulnerability-history-list;vulnerabilities found during
+    ;set breachHistory one-of breach-history-list;
+    ;set awareness one-of awareness-list;
+    set payout_capability one-of payout_capability-list
+    set talent one-of talent_list
+    set information_security_policy one-of information_security_policy_list
+    set time_on_BBP  0;
+    set vulnerability_history 0;vulnerabilities found during
     set num-of-bugs one-of num-of-bugs-list
+    set initial-num-of-bugs num-of-bugs
+    set service-satisfaction "Unknown"
     set validity-period one-of validity-period-list
-
+    set status "Active"
   ]
-   ;figure out a way to randomize company links as well, should be dynamically linked to the number of companies placed in the environment.
-   ;;let num-links random count companies  ;
-   ;show num-links
-   ;ask n-of num-links companies [
-  ;ask n-of 2 companies [
-   ; create-links-with other n-of 2 companies with [self != myself]
-  ;] hold off on the links part of the bug bounty problem
-
 
   ;; set securityResearchers breed properties
   ask securityResearchers [
@@ -194,7 +183,7 @@ to implement-randomizedValues-on-breeds
     set platformKnowledge one-of platform-knowledge-list;
     set honesty one-of honesty-list
     set motivation one-of motivation-list
-    set accessToResources one-of access-to-resources-list
+    ;set accessToResources one-of access-to-resources-list
     set availabilityToResearch one-of availability-to-research-list
     set experienceLevel one-of experience-level-list
     set creativity one-of creativity-list
@@ -274,17 +263,33 @@ to-report responsetime-determination [resolution-factor-used]
 
 end
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;             Simulate
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
 to go
   tick ;; time system to advance by 1 day
   ;;ask turtles ;; ask the turtles to move around , move in diferent directions randomly
   let ticks-years ticks-to-years ticks
-
-  ask securityResearchers [
-    ;show abilityToFindBugs
-    ;let researcher-ability abilityToFindBugs
-    ;let researcher-honesty honesty
-    setxy random-xcor random-ycor
-    look-for-bugs honesty abilityToFindBugs motivation
+  ;show ticks
+  ask companies [
+  ;show validity-period
+  ifelse validity-period = ticks [
+    show (word "Stop program at " validity-period " days")
+      set status "Inactive"
+  ][
+      show status
+      show validity-period
+      if status = "Active" [
+        ask securityResearchers [
+        setxy random-xcor random-ycor
+        look-for-bugs honesty abilityToFindBugs motivation
+        ]
+      ]
+    ]
   ]
   calc-vulnerable-percentage
   if %vulnerable = 0 [stop] ;; if all are safe then end the simulation
@@ -298,64 +303,86 @@ to look-for-bugs [researcher-honesty researcher-ability researcher-motivation]
   ;]
 
   let xyz one-of companies-here
+  ;show xyz
   if xyz != nobody [; If company has been found to be in the same patch as a researcher. Meaning a researcher is interacting with the company
-    ;show xyz
+    ;;Properties from companies
+; payout_capability-list
+;  talent_list
+;  information_security_policy_list
+;  vulnerability-history-list
+;  num-of-bugs-list
+;  validity-period-list
+;  status_list
+    let company-payout_capability [payout_capability] of xyz
+    let company-talent [talent] of xyz
+    let company-information_security_policy [information_security_policy] of xyz
+    let company-vulnerability-history [vulnerability_history] of xyz
+    let company-num-of-bugs [num-of-bugs] of xyz
+    let company-validity-period [validity-period] of xyz
+    let company-status [status] of xyz
+
+    ;;Properties from BBP
+
     let bbp-reliability [reliability] of xyz
     let bbp-oligopoly [oligopoly] of xyz
     let bbp-responsetime [responsetime] of xyz
-    ;let patch-validity-period [validity-period] of xyz
     let bbp-verification-process [verification-process] of xyz
     let bbp-verification-process-time [verification-process-time] of xyz
 
-    ;    show patch-reliability
-    ;    show patch-oligopoly
-    ;    show patch-responsetime
-    ;    show patch-verification-process
-    ;    show patch-verification-process-time
+;        show patch-reliability
+;        show patch-oligopoly
+;        show patch-responsetime
+;        show patch-verification-process
+;        show patch-verification-process-time
     ;    Uncomment above to confirm details of the patches and the researcher is on.
     ;;;;;; Checks for Security Researchers start here.Beginning with researcher honesty
+    ;show ticks
+    ;show company-validity-period
     ifelse bbp-reliability = "Reliable" [;based on this research https://www.emerald.com/insight/content/doi/10.1108/IJCHM-06-2018-0532/full/html#sec011 Overall, 50-68 per cent of customers gave the highest rating, with Foodora having the least satisfied customers and UberEats having the most satisfied customers
       ifelse researcher-honesty[;; only work on vulnerabilities if a researcher is honest , think of the else condition later on if need be to introduce black hat operators
       ;show researcher-honesty
-      set motivation motivation + 0.5
-      if researcher-ability = "Pro Hacker" or researcher-ability = "Omnicient" [
+      set motivation motivation + 1
+      if researcher-ability = "Pro Hacker" or researcher-ability = "Guru" or researcher-ability = "Omnicient" [
         ;show researcher-ability
         ask xyz [
-          ;show (word "Before: " num-of-bugs)
-          if num-of-bugs > 0 [ ;;Begin to work on each property
-
+          ;show (word "Num-of-bugs " num-of-bugs)
+          ;show (word "Before: " vulnerability_history)
+          if num-of-bugs > 0 [ ;;Begin to work on each propert
           set num-of-bugs num-of-bugs - 1
+          set vulnerability_history company-vulnerability-history + 1
           ;show (word "After: " num-of-bugs)
+          ;show (word "After: " vulnerability_history)
           set label (word "CID: " who " - Bugs: " num-of-bugs)]
         ];may be add functionality to increase bugs after some time.
        ]
       ][
 
 ;        show "Researcher Dishonest, Reliable Program"
-        show "/n"
-
+;        show "/n"
+;
       ]
     ]
     [
     ifelse bbp-reliability = "Moderately Reliable" [
       ifelse researcher-honesty[;; only work on vulnerabilities if a researcher is honest , think of the else condition later on if need be to introduce black hat operators
       ;show researcher-honesty
-      set motivation motivation + 1
-      if researcher-ability = "Pro Hacker" or researcher-ability = "Omnicient" [
+      set motivation motivation + 0.5
+      if researcher-ability = "Pro Hacker" or researcher-ability = "Guru" or researcher-ability = "Omnicient" [
         ;show researcher-ability
         ask xyz [
           ;show (word "Before: " num-of-bugs)
           if num-of-bugs > 0 [ ;;Begin to work on each property
 
           set num-of-bugs num-of-bugs - 1
+          set vulnerability_history company-vulnerability-history + 1
           ;show (word "After: " num-of-bugs)
           set label (word "CID: " who " - Bugs: " num-of-bugs)]
         ];may be add functionality to increase bugs after some time.
       ]
         ] [
-          show "Researcher Dishonest, Moderately Reliable Program"
-           show "/n"
-
+;          show "Researcher Dishonest, Moderately Reliable Program"
+;           show "/n"
+;
         ]
     ]
      [ ;reliability is low
@@ -363,7 +390,7 @@ to look-for-bugs [researcher-honesty researcher-ability researcher-motivation]
       ifelse researcher-honesty[;; only work on vulnerabilities if a researcher is honest , think of the else condition later on if need be to introduce black hat operators
         ;show researcher-honesty
         set motivation motivation - 1
-        if researcher-ability = "Pro Hacker" or researcher-ability = "Omnicient" [
+        if researcher-ability = "Pro Hacker" or researcher-ability = "Guru" or researcher-ability = "Omnicient" [
           ;show researcher-ability
           ask xyz [
             ;show (word "Before: " num-of-bugs)
@@ -375,9 +402,9 @@ to look-for-bugs [researcher-honesty researcher-ability researcher-motivation]
           ];may be add functionality to increase bugs after some time.
         ]
         ][
-         show "Researcher Dishonest,  Unreliable Program"
-         show "/n"
-
+;         show "Researcher Dishonest,  Unreliable Program"
+;         show "/n"
+;
         ]
      ]
     ]
@@ -403,9 +430,15 @@ if total-companies > 0 [
 end
 
 to-report ticks-to-years [tick-received]
-  let ticks-per-year 365 ; assuming 365 ticks per year
+let ticks-per-year 365 ; assuming 365 ticks per year
   let years ticks / ticks-per-year
   report years
+end
+to-report total-bounties-paid
+end
+to-report total-satisfied-companies
+end
+to-report total-unsatisfied-companies
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -472,13 +505,13 @@ NIL
 SLIDER
 13
 93
-186
+202
 126
 num-of-researchers
 num-of-researchers
 2
-80
-43.0
+1000
+254.0
 1
 1
 NIL
@@ -515,7 +548,7 @@ num-of-companies
 num-of-companies
 0
 100
-100.0
+3.0
 1
 1
 NIL
@@ -551,10 +584,10 @@ count companies
 11
 
 MONITOR
-382
-568
-471
-613
+375
+496
+464
+541
 Researchers
 Count securityResearchers
 17
@@ -569,6 +602,39 @@ MONITOR
 Years Taken
 ticks-to-years ticks
 2
+1
+11
+
+MONITOR
+512
+471
+653
+516
+Satisfied Companies 
+total-satisfied-companies
+17
+1
+11
+
+MONITOR
+512
+537
+662
+582
+Disatisfied Companies
+Disatisfied
+17
+1
+11
+
+MONITOR
+695
+398
+830
+443
+NIL
+total-bounties-paid
+17
 1
 11
 
