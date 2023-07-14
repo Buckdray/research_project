@@ -4,8 +4,15 @@ globals [
   %overallSatisfaction-Researchers
   %overallSatisfaction-Companies
   %total-bounties-paid-to-researcher
+  %overall-initial-bugs
+  %overall-found-bugs
+
+  total-bugs-found
   vulnerability-data
   total-bounties
+  totalBugs
+  foundBugs
+  totalSatisfaction
   ;;Ranges to be used with companies
   ;payout-range-list
 
@@ -26,7 +33,7 @@ globals [
   ability-to-findBugs-list
   ;;Ability based on hackthebox ranks Noob >= 0%,Script Kiddie > 5%, Hacker > 20%, Pro Hacker > 45%,Elite Hacker > 70%,Guru > 90% and Omniscient = 100%
   knowledge-level-list
-  speed-to-analyze-list
+
   platform-knowledge-list
   honesty-list ; measure of honesty and dishonesty of
   motivation-list ;pride,vanity,brandInterest,
@@ -77,15 +84,15 @@ companies-own [
 
 securityResearchers-own [
   abilityToFindBugs
-  knowledgeLevel
+
   speedToAnalyze
   platformKnowledge
   honesty ; measure of honesty and dishonesty of
   motivation ;pride,vanity,brandInterest,
   accessToResources
-  availabilityToResearch
-  experienceLevel
-  creativity
+  ;availabilityToResearch
+  ;experienceLevel
+  ;creativity
   memory;; to develop module for this, may be not needed for now
 ]
 
@@ -109,6 +116,10 @@ to setup
     setxy random-xcor random-ycor
   ]
 
+ set totalBugs 0
+ set foundBugs 0
+ set totalSatisfaction 0
+
   ;; set properties for the breeds
   implement-randomizedValues-on-breeds
   implement-bugbountyprogram-functionality
@@ -127,7 +138,7 @@ to implement-randomizedValues-on-breeds
   ;set time-on-bbp-list 0; not sure if i need this
   ;set vulnerability-history-list n-values 20 [random 100] ; not sure if this is needed https://www.hackerone.com/year-hackerones-bug-bounty-program
   set total-bounties 0
-  set num-of-bugs-list n-values 10 [random 10] ; develop a module to increase vulnerabilities; based on talent  and technology policy
+  set num-of-bugs-list n-values 10 [random 50] ; develop a module to increase vulnerabilities; based on talent  and technology policy
   set payout_capability-list (list 10000 20000 30000 50000 50000 100000 200000 250000 300000 500000);Value in yen
   set talent_list  ["Low" "Medium" "High"]
   set information_security_policy_list  ["Strict" "Moderate" "Relaxed"]
@@ -135,8 +146,6 @@ to implement-randomizedValues-on-breeds
 
   ;;set ability-to-findBugs-list ["Noob" "Script Kiddie" "Hacker" "Pro Hacker" "Elite Hacker" "Guru" "Omniscient"] ;; Find a way to translate these to numbers
   set ability-to-findBugs-list ["Noob" "Pro Hacker" "Guru" "Omniscient"] ;; Find a way to translate these to numbers
-  set knowledge-level-list n-values 20 [random 100];removed as considered duplicate
-  set speed-to-analyze-list n-values 20 [random 100]
   set platform-knowledge-list n-values 20 [random 100]
   set honesty-list [true false];;n-values 20 [random 100] ; measure of honesty and dishonesty of, for now let's give it a range
   set motivation-list  n-values 20 [random 100];pride,vanity,brandInterest,
@@ -144,7 +153,6 @@ to implement-randomizedValues-on-breeds
   set availability-to-research-list n-values 20 [random 100]
   set experience-level-list n-values 20 [random 100]
   set creativity-list n-values 20 [random 100]
-
 
   ask companies [
     ;set for this case we will have to provide a list of values for each company. investigate how to make it more randomized;
@@ -160,7 +168,7 @@ to implement-randomizedValues-on-breeds
     set vulnerability_history 0;vulnerabilities found during
     set num-of-bugs one-of num-of-bugs-list
     set initial-num-of-bugs num-of-bugs
-    set service-satisfaction "Unknown"
+    set service-satisfaction 0
     set validity-period one-of validity-period-list
     set status "Active"
   ]
@@ -169,15 +177,15 @@ to implement-randomizedValues-on-breeds
   ask securityResearchers [
     ;set breed-property value;
     set abilityToFindBugs one-of ability-to-findBugs-list;
-    set knowledgeLevel one-of knowledge-level-list
-    set speedToAnalyze one-of speed-to-analyze-list
+
+
     set platformKnowledge one-of platform-knowledge-list;
     set honesty one-of honesty-list
     set motivation one-of motivation-list
     ;set accessToResources one-of access-to-resources-list
-    set availabilityToResearch one-of availability-to-research-list
-    set experienceLevel one-of experience-level-list
-    set creativity one-of creativity-list
+   ; set availabilityToResearch one-of availability-to-research-list
+   ; set experienceLevel one-of experience-level-list
+    ;set creativity one-of creativity-list
     ;show creativity
   ]
 end
@@ -278,13 +286,19 @@ to go
         ask securityResearchers [
         setxy random-xcor random-ycor
         look-for-bugs honesty abilityToFindBugs motivation
+
         ]
       ]
     ]
   ]
-  calc-vulnerable-percentage
- ; if %vulnerable = 0 [stop] ;; if all are safe then end the simulation
+
+  ;calc-vulnerable-percentage
+  ;calc-motivation-percentage
+
+  ;if %vulnerable = 0 [stop] ;; if all are safe then end the simulation
   ;if ticks = 1825 [stop]
+  ;show %overall-found-bugs
+  ;show %overall-initial-bugs
   if ticks = 360 [stop] ; let the simulation stop after 5 years based on way back machine data of bugbiounty.jp, seems the site has been running fully from 2018
 end
 
@@ -297,121 +311,93 @@ to look-for-bugs [researcher-honesty researcher-ability researcher-motivation]
 
   let xyz one-of companies-here
   ;show xyz
+
   if xyz != nobody [; If company has been found to be in the same patch as a researcher. Meaning a researcher is interacting with the company
-    ;;Properties from companies
-; payout_capability-list
-;  talent_list
-;  information_security_policy_list
-;  vulnerability-history-list
-;  num-of-bugs-list
-;  validity-period-list
-;  status_list
     let company-payout_capability [payout_capability] of xyz
     let company-talent [talent] of xyz
     let company-information_security_policy [information_security_policy] of xyz
     let company-vulnerability-history [vulnerability_history] of xyz
     let company-num-of-bugs [num-of-bugs] of xyz
     let company-validity-period [validity-period] of xyz
+    let company-service-satisfaction [service-satisfaction] of xyz
     let company-status [status] of xyz
-   ; show (word "Payout cap. " company-payout_capability "Company" xyz)
+    ;show (word "Payout cap. " company-payout_capability "Company" xyz)
     ;;Properties from BBP
-
+    ;show (word "Company Satisfaction " company-service-satisfaction)
     let bbp-reliability [reliability] of xyz
     let bbp-oligopoly [oligopoly] of xyz
     let bbp-responsetime [responsetime] of xyz
+    ;show (word "Company responsetime "  bbp-responsetime)
     let bbp-verification-process [verification-process] of xyz
     let bbp-verification-process-time [verification-process-time] of xyz
 
-;        show patch-reliability
-;        show patch-oligopoly
-;        show patch-responsetime
-;        show patch-verification-process
-;        show patch-verification-process-time
-    ;    Uncomment above to confirm details of the patches and the researcher is on.
+    ;Uncomment above to confirm details of the patches and the researcher is on.
     ;;;;;; Checks for Security Researchers start here.Beginning with researcher honesty
     ;show ticks
     ;show company-validity-period
     if company-status != "Inactive"[
+      ;show bbp-reliability
       ifelse bbp-reliability = "Reliable" [;based on this research https://www.emerald.com/insight/content/doi/10.1108/IJCHM-06-2018-0532/full/html#sec011 Overall, 50-68 per cent of customers gave the highest rating, with Foodora having the least satisfied customers and UberEats having the most satisfied customers
-        ifelse researcher-honesty[;; only work on vulnerabilities if a researcher is honest , think of the else condition later on if need be to introduce black hat operators
+          ifelse researcher-honesty[;; only work on vulnerabilities if a researcher is honest , think of the else condition later on if need be to introduce black hat operators
           ;show researcher-honesty
           set motivation motivation + 1
 
           ;show (word "Here 1")
-          ifelse bbp-responsetime = "Fast"[
+          ;ifelse bbp-responsetime = "Fast"[
             set motivation motivation + 2
             if researcher-ability = "Pro Hacker" or researcher-ability = "Guru" or researcher-ability = "Omnicient" [
             ;show researcher-ability
             ask xyz [
-          ;  show (word "Here 2")
-          ;show (word "Num-of-bugs " num-of-bugs)
-          ;show (word "Before: " vulnerability_history)
+              ;  show (word "Here 2")
+              ;show (word "Num-of-bugs " num-of-bugs)
+              ;show (word "Before: " vulnerability_history)
               if num-of-bugs > 0 [ ;;Begin to work on each propert
                 set num-of-bugs num-of-bugs - 1
                 set vulnerability_history company-vulnerability-history + 1
+                set service-satisfaction company-service-satisfaction + 2
                 ;set %total-bounties-paid-to-researcher total-bounties-paid
                 ;show %total-bounties-paid-to-researcher
-          ;show (word "After: " num-of-bugs)
-          ;show (word "After: " vulnerability_history)
+                ;show (word "After: " num-of-bugs)
+                ;show (word "After: " vulnerability_history)
                 set label (word "CID: " who " - Bugs: " num-of-bugs)]
             ];may be add functionality to increase bugs after some time.
           ]
-
-          ][
-            ifelse bbp-responsetime = "Moderate" [
-              set motivation motivation + 1
-            ][
-              set motivation motivation - 1  ; when bbp program is slow to respond
-            ]
-          ]
-
-      ][
-
-;        show "Researcher Dishonest, Reliable Program"
-;        show "/n"
-;
-      ]
-    ]
-    [
-    ifelse bbp-reliability = "Moderately Reliable" [
-      ifelse researcher-honesty[;; only work on vulnerabilities if a researcher is honest , think of the else condition later on if need be to introduce black hat operators
-      ;show researcher-honesty
-        ;  show (word "Here 3")
-      set motivation motivation + 0.5
-      ifelse bbp-responsetime = "Fast"[
-            set motivation motivation + 2
-          ][
-            ifelse bbp-responsetime = "Moderate" [
-              set motivation motivation + 1
-            ][
-              set motivation motivation - 1  ; when bbp program is slow to respond
-            ]
-      ]
-      if researcher-ability = "Pro Hacker" or researcher-ability = "Guru" or researcher-ability = "Omnicient" [
-        ;show researcher-ability
-        ask xyz [
-          ;show (word "Before: " num-of-bugs)
-          if num-of-bugs > 0 [ ;;Begin to work on each property
-
-          set num-of-bugs num-of-bugs - 1
-
-          set vulnerability_history company-vulnerability-history + 1
-          ;set %total-bounties-paid-to-researcher total-bounties-paid
-
-
-          set vulnerability_history company-vulnerability-history + 1
-          ;show (word "After: " num-of-bugs)
-          set label (word "CID: " who " - Bugs: " num-of-bugs)]
-        ];may be add functionality to increase bugs after some time.
-      ]
-        ] [
-;          show "Researcher Dishonest, Moderately Reliable Program"
-;           show "/n"
-         ; show (word "Here 4")
         ]
-    ]
-     [ ;reliability is low
-          ; when Reliability is less than 5 ; also add a way you can increase this reliability
+        [
+
+        ;; researcher dishonest
+        ]
+      ]
+      [
+      ifelse bbp-reliability = "Moderately Reliable" [
+          ifelse researcher-honesty[
+          ;; only work on vulnerabilities if a researcher is honest , think of the else condition later on if need be to introduce black hat operators
+          ;show researcher-honesty
+          ;  show (word "Here 3")
+          set motivation motivation + 0.5
+            ;ifelse bbp-responsetime = "Moderate" [
+              set motivation motivation + 1
+              if researcher-ability = "Pro Hacker" or researcher-ability = "Guru" or researcher-ability = "Omnicient" [
+                ;show researcher-ability
+                ask xyz [
+                  ;show (word "Before: " num-of-bugs)
+                  if num-of-bugs > 0 [ ;;Begin to work on each property
+                    set num-of-bugs num-of-bugs - 1
+                    set service-satisfaction company-service-satisfaction + 1
+                    set vulnerability_history company-vulnerability-history + 1
+                    ;set %total-bounties-paid-to-researcher total-bounties-paid
+                    ;show (word "After: " num-of-bugs)
+                    set label (word "CID: " who " - Bugs: " num-of-bugs)]
+                ];may be add functionality to increase bugs after some time.
+              ]
+          ] [
+              ;show "Researcher Dishonest, Moderately Reliable Program"
+              ;show "/n"
+              ;show (word "Here 4")
+          ]
+      ]
+      [ ;reliability is low
+      ; when Reliability is less than 5 ; also add a way you can increase this reliability
       ifelse researcher-honesty[;; only work on vulnerabilities if a researcher is honest , think of the else condition later on if need be to introduce black hat operators
         ;show researcher-honesty
         set motivation motivation - 1
@@ -430,24 +416,31 @@ to look-for-bugs [researcher-honesty researcher-ability researcher-motivation]
           ];may be add functionality to increase bugs after some time.
         ]
         ][
-;         show "Researcher Dishonest,  Unreliable Program"
-;         show "/n"
+
+         ;show "Researcher Dishonest,  Unreliable Program"
+         ;show "/n"
 
         ]
+      ]
      ]
-    ]
-    ]
-  ]
+   ]
+    calc-vulnerable-percentage
+   ; show %overall-found-bugs
+
+
+
+]
+
+
 end
 
 to calc-vulnerable-percentage
 let total-companies count companies
 ;show (word "Total Companies: " total-companies)
-
 let total-companies-with-bugs count companies with [num-of-bugs > 0]
 let total-companies-without-bugs count companies with [num-of-bugs = 0]
 ;show (word "Total Companies with bugs: " total-companies-with-bugs)
-
+;show (word "Total Companies without bugs: " total-companies-without-bugs)
 let vulnerability-percentage 0
 let vulnerability-percentage-without-bugs 0
 if total-companies > 0 [
@@ -485,12 +478,47 @@ end
 
 
 to-report total-satisfied-companies
+ let total-companies count companies
+
+ let satisfied-rate count companies with [vulnerability_history > initial-num-of-bugs / 2]
+ report satisfied-rate
 end
+
 to-report total-dissatisfied-companies
+  let total-companies count companies
+
+ let dissatisfied-companies count companies with [vulnerability_history < initial-num-of-bugs / 2]
+ report dissatisfied-companies
 end
 
 to-report resolved-vulnerabilities
 
+end
+
+to calc-motivation-percentage
+
+end
+
+to-report overall-found-bugs
+;  ask companies [
+;    set totalBugs initial-num-of-bugs
+;    set foundBugs found
+;  ]
+  let totalBugsx 0
+
+  ask companies [
+    set total-bugs-found totalBugsx + vulnerability_history
+    ;show (word "Total bugs: " total-bugs-found)
+  ]
+  ;show total-bugs-found
+  report total-bugs-found
+end
+
+
+
+to-report company-satisfaction
+  let satisfied-rate count companies with [service-satisfaction > 1]
+ report satisfied-rate
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -563,7 +591,7 @@ num-of-researchers
 num-of-researchers
 2
 1000
-816.0
+76.0
 1
 1
 NIL
@@ -600,7 +628,7 @@ num-of-companies
 num-of-companies
 0
 100
-28.0
+39.0
 1
 1
 NIL
@@ -613,16 +641,17 @@ PLOT
 278
 Overall Vulnerabilities in the BBP
 Days
-Vulnerabilites Percentage
+Vulnerability Rate 
+1.0
+360.0
 0.0
-10.0
-0.0
-10.0
-true
+100.0
+false
 false
 "" ""
 PENS
 "default" 1.0 0 -8053223 true "" "plot %vulnerable"
+"pen-1" 1.0 0 -13840069 true "" "plot %vulnerable2 "
 
 MONITOR
 15
@@ -702,22 +731,58 @@ Resolved vulnerabilities
 11
 
 PLOT
-139
-475
-882
-736
-Overall Motivation to Participate in BBP
-NIL
-NIL
+287
+424
+855
+685
+Overall Bug Count overtime in BBP
+Days
+Bugs founds
+1.0
+360.0
 0.0
-10.0
-0.0
-10.0
-true
+100.0
+false
 false
 "" ""
 PENS
-"default" 1.0 0 -16777216 true "" "plot count turtles"
+"pen-1" 1.0 0 -2674135 true "" "plot overall-found-bugs"
+
+PLOT
+283
+711
+853
+957
+Overall Company satisfaction 
+Days
+Satisfaction Rate
+1.0
+360.0
+100.0
+0.0
+false
+false
+"" ""
+PENS
+"pen-1" 1.0 0 -7500403 true "" "plot company-satisfaction "
+
+PLOT
+18
+375
+259
+572
+Satisfied Companies
+Days
+Companies
+1.0
+360.0
+1.0
+100.0
+false
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot total-satisfied-companies"
 
 @#$#@#$#@
 ##ChangeLog 
