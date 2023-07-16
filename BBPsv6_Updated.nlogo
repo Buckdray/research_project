@@ -6,6 +6,8 @@ globals [
   %total-bounties-paid-to-researcher
   %overall-initial-bugs
   %overall-found-bugs
+  %overall-paid-bounties
+  %total-vulnerabilities
 
   total-bugs-found
   vulnerability-data
@@ -71,6 +73,7 @@ breed [securityResearchers researcher]
 
 companies-own [
   payout_capability
+  total_paid
   talent
   information_security_policy
   vulnerability_history ;vulnerabilities found during bbp
@@ -138,7 +141,8 @@ to implement-randomizedValues-on-breeds
   ;set time-on-bbp-list 0; not sure if i need this
   ;set vulnerability-history-list n-values 20 [random 100] ; not sure if this is needed https://www.hackerone.com/year-hackerones-bug-bounty-program
   set total-bounties 0
-  set num-of-bugs-list n-values 10 [random 50] ; develop a module to increase vulnerabilities; based on talent  and technology policy
+
+  set num-of-bugs-list n-values 10 [random 100] ; develop a module to increase vulnerabilities; based on talent  and technology policy
   set payout_capability-list (list 10000 20000 30000 50000 50000 100000 200000 250000 300000 500000);Value in yen
   set talent_list  ["Low" "Medium" "High"]
   set information_security_policy_list  ["Strict" "Moderate" "Relaxed"]
@@ -165,6 +169,7 @@ to implement-randomizedValues-on-breeds
     set talent one-of talent_list
     set information_security_policy one-of information_security_policy_list
     set time_on_BBP  0;
+    set total-bounties 0;
     set vulnerability_history 0;vulnerabilities found during
     set num-of-bugs one-of num-of-bugs-list
     set initial-num-of-bugs num-of-bugs
@@ -274,6 +279,7 @@ to go
   ;;ask turtles ;; ask the turtles to move around , move in diferent directions randomly
   let ticks-years ticks-to-years ticks
   ;show ticks
+  set %overall-paid-bounties 0
   ask companies [
   ;show validity-period
   ifelse validity-period = ticks [
@@ -290,6 +296,8 @@ to go
         ]
       ]
     ]
+    set %total-vulnerabilities sum [vulnerability_history / 1000] of companies
+    set %overall-paid-bounties sum [total_paid / 1000000] of companies
   ]
 
   ;calc-vulnerable-percentage
@@ -300,6 +308,7 @@ to go
   ;show %overall-found-bugs
   ;show %overall-initial-bugs
   if ticks = 360 [stop] ; let the simulation stop after 5 years based on way back machine data of bugbiounty.jp, seems the site has been running fully from 2018
+
 end
 
 to look-for-bugs [researcher-honesty researcher-ability researcher-motivation]
@@ -331,6 +340,9 @@ to look-for-bugs [researcher-honesty researcher-ability researcher-motivation]
     let bbp-verification-process [verification-process] of xyz
     let bbp-verification-process-time [verification-process-time] of xyz
 
+
+    let negative-service-satisfaction (list 0.1 0.2 0.3 0.4 0.5 -0.1 -0.2 -0.3 -0.4 -0.5)
+
     ;Uncomment above to confirm details of the patches and the researcher is on.
     ;;;;;; Checks for Security Researchers start here.Beginning with researcher honesty
     ;show ticks
@@ -353,7 +365,10 @@ to look-for-bugs [researcher-honesty researcher-ability researcher-motivation]
               ;show (word "Before: " vulnerability_history)
               if num-of-bugs > 0 [ ;;Begin to work on each propert
                 set num-of-bugs num-of-bugs - 1
+
                 set vulnerability_history company-vulnerability-history + 1
+                set total_paid vulnerability_history * payout_capability
+                ;show total_paid
                 set service-satisfaction company-service-satisfaction + 2
                 ;set %total-bounties-paid-to-researcher total-bounties-paid
                 ;show %total-bounties-paid-to-researcher
@@ -385,6 +400,8 @@ to look-for-bugs [researcher-honesty researcher-ability researcher-motivation]
                     set num-of-bugs num-of-bugs - 1
                     set service-satisfaction company-service-satisfaction + 1
                     set vulnerability_history company-vulnerability-history + 1
+                    set total_paid vulnerability_history * payout_capability
+                    ;show total_paid
                     ;set %total-bounties-paid-to-researcher total-bounties-paid
                     ;show (word "After: " num-of-bugs)
                     set label (word "CID: " who " - Bugs: " num-of-bugs)]
@@ -410,6 +427,10 @@ to look-for-bugs [researcher-honesty researcher-ability researcher-motivation]
               ;show (word "After: " num-of-bugs)
 
               set vulnerability_history company-vulnerability-history + 1
+              set total_paid vulnerability_history * payout_capability
+
+              set service-satisfaction company-service-satisfaction + one-of negative-service-satisfaction
+                ;show total_paid
               ;set %total-bounties-paid-to-researcher total-bounties-paid
               set label (word "CID: " who " - Bugs: " num-of-bugs)
             ]
@@ -466,15 +487,6 @@ let ticks-per-year 365 ; assuming 365 ticks per year
   report years
 end
 
-to-report total-bounties-paid
-
-;  ask companies [
-;    show [payout_capability] of myself
-;    set total-bounties total-bounties + [payout_capability] of myself
-;  ]
-;  show total-bounties
-;  report total-bounties
-end
 
 
 to-report total-satisfied-companies
@@ -520,15 +532,27 @@ to-report company-satisfaction
   let satisfied-rate count companies with [service-satisfaction > 1]
  report satisfied-rate
 end
+
+to-report total-bounties-paid
+ let sum-of-bounties 0
+  ask companies [
+    set sum-of-bounties sum [total_paid] of myself
+    ;show (word "Sum of bounties: "sum-of-bounties)
+  ]
+
+  report sum-of-bounties
+end
+
+
 @#$#@#$#@
 GRAPHICS-WINDOW
-870
--144
+1079
+-39
 1899
-886
+782
 -1
 -1
-24.90244
+19.805
 1
 10
 1
@@ -591,17 +615,17 @@ num-of-researchers
 num-of-researchers
 2
 1000
-76.0
+185.0
 1
 1
 NIL
 HORIZONTAL
 
 MONITOR
-290
-287
-476
-332
+502
+292
+688
+337
 Unresolved Vulnerabilities %
 %vulnerable
 17
@@ -628,17 +652,17 @@ num-of-companies
 num-of-companies
 0
 100
-39.0
+85.0
 1
 1
 NIL
 HORIZONTAL
 
 PLOT
-288
-10
-869
-278
+500
+15
+1081
+283
 Overall Vulnerabilities in the BBP
 Days
 Vulnerability Rate 
@@ -687,10 +711,10 @@ ticks-to-years ticks
 11
 
 MONITOR
-288
-346
-476
-391
+500
+351
+688
+396
 Satisfied Companies 
 total-satisfied-companies
 17
@@ -698,10 +722,10 @@ total-satisfied-companies
 11
 
 MONITOR
-489
-347
-664
-392
+701
+352
+876
+397
 Disatisfied Companies
 total-dissatisfied-companies
 17
@@ -709,21 +733,21 @@ total-dissatisfied-companies
 11
 
 MONITOR
-669
-286
-867
-331
-Bounties Paid to researchers (¥)
-%total-bounties-paid-to-researcher
+881
+291
+1133
+336
+Bounties Paid to researchers (¥ Million)
+%overall-paid-bounties
 17
 1
 11
 
 MONITOR
-487
-287
-664
-332
+699
+292
+876
+337
 Resolved vulnerabilities 
 %vulnerable2
 17
@@ -731,10 +755,10 @@ Resolved vulnerabilities
 11
 
 PLOT
-287
-424
-855
-685
+499
+429
+1067
+690
 Overall Bug Count overtime in BBP
 Days
 Bugs founds
@@ -749,17 +773,17 @@ PENS
 "pen-1" 1.0 0 -2674135 true "" "plot overall-found-bugs"
 
 PLOT
-283
-711
-853
-957
+495
+716
+1065
+962
 Overall Company satisfaction 
 Days
 Satisfaction Rate
 1.0
 360.0
+-10.0
 100.0
-0.0
 false
 false
 "" ""
@@ -769,9 +793,9 @@ PENS
 PLOT
 18
 375
-259
+427
 572
-Satisfied Companies
+Satisfied Companies Vs Unsatisfied Companies
 Days
 Companies
 1.0
@@ -782,7 +806,19 @@ false
 false
 "" ""
 PENS
-"default" 1.0 0 -16777216 true "" "plot total-satisfied-companies"
+"default" 1.0 0 -13840069 true "" "plot total-satisfied-companies"
+"pen-1" 1.0 0 -2674135 true "" "plot total-dissatisfied-companies"
+
+MONITOR
+17
+291
+301
+336
+Total  Vulnerabilities Found in the BBP (000)
+%total-vulnerabilities
+17
+1
+11
 
 @#$#@#$#@
 ##ChangeLog 
@@ -1147,6 +1183,53 @@ NetLogo 6.2.2
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
+<experiments>
+  <experiment name="experiment" repetitions="1" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count turtles</metric>
+    <enumeratedValueSet variable="num-of-researchers">
+      <value value="1000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="num-of-companies">
+      <value value="100"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="experiment" repetitions="1" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count turtles</metric>
+    <metric>company-satisfaction</metric>
+    <steppedValueSet variable="num-of-researchers" first="0" step="10" last="1000"/>
+    <enumeratedValueSet variable="num-of-companies">
+      <value value="100"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="experiment" repetitions="1" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>overall-found-bugs</metric>
+    <metric>%vulnerable</metric>
+    <metric>%vulnerable2</metric>
+    <metric>%overall-paid-bounties</metric>
+    <metric>%total-vulnerabilities</metric>
+    <metric>total-dissatisfied-companies</metric>
+    <metric>total-satisfied-companies</metric>
+    <steppedValueSet variable="num-of-researchers" first="10" step="25" last="1000"/>
+    <steppedValueSet variable="num-of-companies" first="10" step="25" last="100"/>
+  </experiment>
+  <experiment name="experiment" repetitions="1" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>%overall-paid-bounties</metric>
+    <enumeratedValueSet variable="num-of-researchers">
+      <value value="386"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="num-of-companies">
+      <value value="44"/>
+    </enumeratedValueSet>
+  </experiment>
+</experiments>
 @#$#@#$#@
 @#$#@#$#@
 default
