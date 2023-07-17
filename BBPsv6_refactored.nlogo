@@ -87,15 +87,11 @@ companies-own [
 
 securityResearchers-own [
   abilityToFindBugs
-
   speedToAnalyze
   platformKnowledge
   honesty ; measure of honesty and dishonesty of
   motivation ;pride,vanity,brandInterest,
   accessToResources
-  ;availabilityToResearch
-  ;experienceLevel
-  ;creativity
   memory;; to develop module for this, may be not needed for now
 ]
 
@@ -135,13 +131,28 @@ end
 
 to implement-randomizedValues-on-breeds
   set total-bounties 0
+  set-bbp-property-lists
+  set-researcher-property-lists
+
+  ask companies [
+    pick-randomized-values-company-properties
+  ]
+
+  ask securityResearchers [
+    pick-randomized-values-for-researcher-properties
+  ]
+end
+
+
+to set-bbp-property-lists
   set num-of-bugs-list n-values 10 [random 100]
   set payout_capability-list (list 10000 20000 30000 50000 50000 100000 200000 250000 300000 500000)
   set talent_list  ["Low" "Medium" "High"]
   set information_security_policy_list  ["Strict" "Moderate" "Relaxed"]
   set validity-period-list  (list  30 60 120  360  "Undefined")
+end
 
-
+to set-researcher-property-lists
   set ability-to-findBugs-list ["Noob" "Pro Hacker" "Guru" "Omniscient"]
   set platform-knowledge-list n-values 20 [random 100]
   set honesty-list [true false]
@@ -149,33 +160,30 @@ to implement-randomizedValues-on-breeds
   set availability-to-research-list n-values 20 [random 100]
   set experience-level-list n-values 20 [random 100]
   set creativity-list n-values 20 [random 100]
+end
 
-  ask companies [
+to pick-randomized-values-company-properties
     set payout_capability one-of payout_capability-list
     set talent one-of talent_list
     set information_security_policy one-of information_security_policy_list
     set time_on_BBP  0;
     set total-bounties 0;
-    set vulnerability_history 0
+    set vulnerability_history 0;vulnerabilities found during
     set num-of-bugs one-of num-of-bugs-list
     set initial-num-of-bugs num-of-bugs
     set service-satisfaction 0
     set validity-period one-of validity-period-list
     set status "Active"
-  ]
+end
 
-  ask securityResearchers [
+to pick-randomized-values-for-researcher-properties
     set abilityToFindBugs one-of ability-to-findBugs-list;
     set platformKnowledge one-of platform-knowledge-list;
     set honesty one-of honesty-list
     set motivation one-of motivation-list
-  ]
 end
 
 to implement-bugbountyprogram-functionality
-  ;;set BBP properties
-  ;;determine bbp reliability
-
   let resources-available-value one-of ["Limited" "Adequate" "Abundant"]
   let resolution-factor-value one-of ["Quick" "Moderate" "Lengthy"]
   let responsetime-value responsetime-determination resolution-factor-value;;random-float 10 ; This value is influenced by so many things like company policy etc
@@ -519,7 +527,6 @@ to-report total-bounties-paid
 
   report sum-of-bounties
 end
-
 @#$#@#$#@
 GRAPHICS-WINDOW
 1079
