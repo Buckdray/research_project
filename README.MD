@@ -8,9 +8,9 @@ STEP 2
 Click simulate
 
 
+XOXOXOXOXOXOXOXOXXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOX
 
-
-To Perform multiple experiments do the following: 
+To Perform multiple experiments at a go do the following: 
 
 1. Go to Tools 
 2. Select BehaviorSpace
