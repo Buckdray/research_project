@@ -8,6 +8,8 @@ globals [
   %overall-found-bugs
   %overall-paid-bounties
   %total-vulnerabilities
+  %motivated-researchers
+  %unmotivated-researchers
 
   total-bugs-found
   vulnerability-data
@@ -135,7 +137,7 @@ end
 
 to implement-randomizedValues-on-breeds
   set total-bounties 0
-  set num-of-bugs-list n-values 10 [random 100]
+  set num-of-bugs-list n-values 10 [random 30]
   set payout_capability-list (list 10000 20000 30000 50000 50000 100000 200000 250000 300000 500000)
   set talent_list  ["Low" "Medium" "High"]
   set information_security_policy_list  ["Strict" "Moderate" "Relaxed"]
@@ -145,7 +147,7 @@ to implement-randomizedValues-on-breeds
   set ability-to-findBugs-list ["Noob" "Pro Hacker" "Guru" "Omniscient"]
   set platform-knowledge-list n-values 20 [random 100]
   set honesty-list [true false]
-  set motivation-list  n-values 20 [random 100]
+  set motivation-list  n-values 20 [random 20]
   set availability-to-research-list n-values 20 [random 100]
   set experience-level-list n-values 20 [random 100]
   set creativity-list n-values 20 [random 100]
@@ -319,7 +321,7 @@ to look-for-bugs [researcher-honesty researcher-ability researcher-motivation]
 
 
     let negative-service-satisfaction (list 0.1 0.2 0.3 0.4 0.5 -0.1 -0.2 -0.3 -0.4 -0.5)
-
+    let negative-researcher-motivation (list 1 2 -2 -1 0 0.1 0.5 -0.1 -0.5)
     ;Uncomment above to confirm details of the patches and the researcher is on.
     ;;;;;; Checks for Security Researchers start here.Beginning with researcher honesty
     ;show ticks
@@ -352,7 +354,9 @@ to look-for-bugs [researcher-honesty researcher-ability researcher-motivation]
                 ;show (word "After: " num-of-bugs)
                 ;show (word "After: " vulnerability_history)
                 set label (word "CID: " who " - Bugs: " num-of-bugs)]
+
             ];may be add functionality to increase bugs after some time.
+            set motivation motivation + one-of negative-researcher-motivation
           ]
         ]
         [
@@ -382,7 +386,9 @@ to look-for-bugs [researcher-honesty researcher-ability researcher-motivation]
                     ;set %total-bounties-paid-to-researcher total-bounties-paid
                     ;show (word "After: " num-of-bugs)
                     set label (word "CID: " who " - Bugs: " num-of-bugs)]
+
                 ];may be add functionality to increase bugs after some time.
+              set motivation motivation + one-of negative-researcher-motivation
               ]
           ] [
               ;show "Researcher Dishonest, Moderately Reliable Program"
@@ -410,9 +416,13 @@ to look-for-bugs [researcher-honesty researcher-ability researcher-motivation]
                 ;show total_paid
               ;set %total-bounties-paid-to-researcher total-bounties-paid
               set label (word "CID: " who " - Bugs: " num-of-bugs)
+
             ]
+
           ];may be add functionality to increase bugs after some time.
+              set motivation motivation + one-of negative-researcher-motivation
         ]
+
         ][
 
          ;show "Researcher Dishonest,  Unreliable Program"
@@ -423,10 +433,7 @@ to look-for-bugs [researcher-honesty researcher-ability researcher-motivation]
      ]
    ]
     calc-vulnerable-percentage
-   ; show %overall-found-bugs
-
-
-
+    calc-motivation-percentage
 ]
 
 
@@ -446,9 +453,7 @@ if total-companies > 0 [
   ]
  if total-companies > 0
  [
-
     set vulnerability-percentage-without-bugs (total-companies-without-bugs / total-companies)* 100
-
   ]
 
 ;show (word "% Vulnerable: " vulnerability-percentage);; defining the infected variable.
@@ -485,7 +490,28 @@ to-report resolved-vulnerabilities
 end
 
 to calc-motivation-percentage
+  let total-researchers count securityResearchers
+  ;show (word "Total Companies: " total-researchers)
+  let total-researchers-with-motivation count securityResearchers with [motivation > 10]
+  let total-researchers-without-motivation count securityResearchers with [motivation < 10]
+;  ;show (word "Total Companies with bugs: " total-companies-with-bugs)
+;  ;show (word "Total Companies without bugs: " total-companies-without-bugs)
+;  let vulnerability-percentage 0
+;  let vulnerability-percentage-without-bugs 0
+;  if total-researchers > 0 [
+;     set vulnerability-percentage (total-companies-with-bugs / total-researchers) * 100
+;  ]
+;  if total-researchers > 0
+;  [
+;    set vulnerability-percentage-without-bugs (total-companies-without-bugs / total-researchers)* 100
+;  ]
+;
+;;show (word "% Vulnerable: " vulnerability-percentage);; defining the infected variable.
+;
 
+
+ set %motivated-researchers  total-researchers-with-motivation
+ set %unmotivated-researchers total-researchers-without-motivation
 end
 
 to-report overall-found-bugs
@@ -519,7 +545,6 @@ to-report total-bounties-paid
 
   report sum-of-bounties
 end
-
 @#$#@#$#@
 GRAPHICS-WINDOW
 1079
@@ -591,7 +616,7 @@ num-of-researchers
 num-of-researchers
 2
 1000
-185.0
+150.0
 1
 1
 NIL
@@ -637,7 +662,7 @@ HORIZONTAL
 PLOT
 500
 15
-1081
+1069
 283
 Overall Vulnerabilities in the BBP
 Days
@@ -711,7 +736,7 @@ total-dissatisfied-companies
 MONITOR
 881
 291
-1133
+1071
 336
 Bounties Paid to researchers (¥ Million)
 %overall-paid-bounties
@@ -1194,16 +1219,38 @@ NetLogo 6.2.2
     <steppedValueSet variable="num-of-researchers" first="10" step="25" last="1000"/>
     <steppedValueSet variable="num-of-companies" first="10" step="25" last="100"/>
   </experiment>
-  <experiment name="experiment" repetitions="1" runMetricsEveryStep="true">
+  <experiment name="Bounties Paid statistics" repetitions="1" runMetricsEveryStep="true">
     <setup>setup</setup>
     <go>go</go>
     <metric>%overall-paid-bounties</metric>
-    <enumeratedValueSet variable="num-of-researchers">
-      <value value="386"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="num-of-companies">
-      <value value="44"/>
-    </enumeratedValueSet>
+    <steppedValueSet variable="num-of-researchers" first="1" step="10" last="1000"/>
+    <steppedValueSet variable="num-of-companies" first="1" step="10" last="100"/>
+  </experiment>
+  <experiment name="Company Satisfaction" repetitions="1" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>company-satisfaction</metric>
+    <metric>total-dissatisfied-companies</metric>
+    <metric>total-satisfied-companies</metric>
+    <steppedValueSet variable="num-of-researchers" first="1" step="10" last="1000"/>
+    <steppedValueSet variable="num-of-companies" first="1" step="5" last="100"/>
+  </experiment>
+  <experiment name="Vulnerability Statistics" repetitions="1" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>%vulnerable</metric>
+    <metric>%vulnerable2</metric>
+    <metric>%total-vulnerabilities</metric>
+    <steppedValueSet variable="num-of-researchers" first="1" step="5" last="1000"/>
+    <steppedValueSet variable="num-of-companies" first="1" step="5" last="100"/>
+  </experiment>
+  <experiment name="Researcher Motivation" repetitions="1" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>%motivated-researchers</metric>
+    <metric>%unmotivated-researchers</metric>
+    <steppedValueSet variable="num-of-researchers" first="50" step="20" last="185"/>
+    <steppedValueSet variable="num-of-companies" first="1" step="2" last="85"/>
   </experiment>
 </experiments>
 @#$#@#$#@
